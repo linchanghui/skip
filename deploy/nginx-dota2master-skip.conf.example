@@ -1,0 +1,16 @@
+# 片段：若宿主机使用 Nginx，加入 dota2master.com 的 server { } 内。
+# 当前 EC2 实际使用 Caddy（见 ~/dota2-replayer/deploy/Caddyfile.ec2），已配置 handle /skip* → 127.0.0.1:18181。
+# 更新宿主机 Caddyfile 后若与容器内不一致，可执行: sudo docker restart caddy（bind 挂载文件被 rsync 替换 inode 时可能需要）。
+#
+# Skip 在本机 18181，Go 进程需带 -base /skip；前端构建需 VITE_BASE_PATH=/skip/
+#
+# 注意：proxy_pass 末尾不要加 /，以便把 /skip/... 原样传给上游（由 Go StripPrefix 处理）。
+
+location /skip/ {
+    proxy_pass http://127.0.0.1:18181;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}

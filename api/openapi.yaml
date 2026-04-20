@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: Skip Queue Map API
+  version: 0.1.0
+  description: MVP API for store queue status near Changi (demo).
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Liveness probe
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /v1/areas/changi:
+    get:
+      operationId: getAreaChangi
+      summary: Demo area metadata (Changi)
+      responses:
+        "200":
+          description: Area
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Area"
+
+  /v1/stores:
+    get:
+      operationId: listStores
+      summary: List stores in an area
+      parameters:
+        - name: area_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: changi
+      responses:
+        "200":
+          description: Stores
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stores]
+                properties:
+                  stores:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Store"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/stores/{id}:
+    get:
+      operationId: getStore
+      summary: Store detail with recent status history
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+        - name: history_limit
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/stores/{id}/status-reports:
+    post:
+      operationId: createStatusReport
+      summary: Submit a new queue status (admin)
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusReportInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          description: Admin key not configured on server
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+
+components:
+  parameters:
+    StoreId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Unauthorized:
+      description: Missing or invalid admin key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+
+  schemas:
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    BusyLevel:
+      type: string
+      enum: [quiet, moderate, busy, closed]
+
+    StatusSource:
+      type: string
+      enum: [merchant, operator, integration, crowd]
+
+    LatLng:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+
+    BBox:
+      type: object
+      required: [south, west, north, east]
+      properties:
+        south: { type: number, format: double }
+        west: { type: number, format: double }
+        north: { type: number, format: double }
+        east: { type: number, format: double }
+
+    Area:
+      type: object
+      required: [id, name, center, default_zoom, bbox]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        center:
+          $ref: "#/components/schemas/LatLng"
+        default_zoom:
+          type: integer
+        bbox:
+          $ref: "#/components/schemas/BBox"
+
+    LatestStatus:
+      type: object
+      required: [busy_level, as_of, source]
+      properties:
+        busy_level:
+          $ref: "#/components/schemas/BusyLevel"
+        queue_length:
+          type: integer
+          nullable: true
+        wait_minutes_est:
+          type: integer
+          nullable: true
+        as_of:
+          type: string
+          format: date-time
+        source:
+          $ref: "#/components/schemas/StatusSource"
+
+    Store:
+      type: object
+      required: [id, name, area_id, location, category]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        area_id: { type: string }
+        terminal:
+          type: string
+          nullable: true
+        floor:
+          type: string
+          nullable: true
+        category: { type: string }
+        location:
+          $ref: "#/components/schemas/LatLng"
+        external_ref:
+          type: string
+          nullable: true
+        latest_status:
+          $ref: "#/components/schemas/LatestStatus"
+          nullable: true
+
+    StoreDetail:
+      allOf:
+        - $ref: "#/components/schemas/Store"
+        - type: object
+          properties:
+            status_history:
+              type: array
+              items:
+                $ref: "#/components/schemas/StatusReport"
+
+    StatusReportInput:
+      type: object
+      required: [busy_level, source]
+      properties:
+        busy_level:
+          $ref: "#/components/schemas/BusyLevel"
+        queue_length:
+          type: integer
+          nullable: true
+        wait_minutes_est:
+          type: integer
+          nullable: true
+        source:
+          $ref: "#/components/schemas/StatusSource"
+        note:
+          type: string
+          nullable: true
+
+    StatusReport:
+      type: object
+      required: [id, store_id, busy_level, source, reported_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        store_id: { type: string }
+        busy_level:
+          $ref: "#/components/schemas/BusyLevel"
+        queue_length:
+          type: integer
+          nullable: true
+        wait_minutes_est:
+          type: integer
+          nullable: true
+        source:
+          $ref: "#/components/schemas/StatusSource"
+        reporter_id:
+          type: string
+          nullable: true
+        reported_at:
+          type: string
+          format: date-time
+        note:
+          type: string
+          nullable: true
