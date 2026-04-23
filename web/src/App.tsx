@@ -54,7 +54,7 @@ export default function App(): JSX.Element {
         }
       } catch (e) {
         if (!cancelled) {
-          setListError(e instanceof Error ? e.message : "加载失败");
+          setListError(e instanceof Error ? e.message : "Failed to load data.");
         }
       }
     })();
@@ -80,7 +80,7 @@ export default function App(): JSX.Element {
       } catch (e) {
         if (!cancelled) {
           setDetail(null);
-          setDetailError(e instanceof Error ? e.message : "加载失败");
+          setDetailError(e instanceof Error ? e.message : "Failed to load store details.");
         }
       } finally {
         if (!cancelled) {
@@ -124,7 +124,7 @@ export default function App(): JSX.Element {
 
   const submitTask = useCallback(async () => {
     if (!selectedStoreId) {
-      setTaskError("请先选择门店");
+      setTaskError("Please select a store first.");
       return;
     }
     setTaskSubmitting(true);
@@ -138,7 +138,7 @@ export default function App(): JSX.Element {
       setTaskResult(created);
       setRunnerTaskID(created.id);
     } catch (e) {
-      setTaskError(e instanceof Error ? e.message : "创建任务失败");
+      setTaskError(e instanceof Error ? e.message : "Failed to create task.");
     } finally {
       setTaskSubmitting(false);
     }
@@ -154,7 +154,7 @@ export default function App(): JSX.Element {
       });
       setRunnerResult(accepted);
     } catch (e) {
-      setRunnerError(e instanceof Error ? e.message : "接单失败");
+      setRunnerError(e instanceof Error ? e.message : "Failed to accept task.");
     } finally {
       setRunnerSubmitting(false);
     }
@@ -163,7 +163,7 @@ export default function App(): JSX.Element {
   return (
     <div className="app">
       <header className="app__header">
-        <h1>Skip · 樟宜 Demo</h1>
+        <h1>Skip · Changi Demo</h1>
         {area ? <p className="app__tagline">{area.name}</p> : null}
       </header>
 
@@ -185,7 +185,7 @@ export default function App(): JSX.Element {
             error={detailError}
           />
           <section className="action-panel">
-            <h3>创建任务（MVP）</h3>
+            <h3>Create Task (MVP)</h3>
             <label>
               User ID
               <input
@@ -194,17 +194,17 @@ export default function App(): JSX.Element {
               />
             </label>
             <button type="button" onClick={submitTask} disabled={taskSubmitting}>
-              {taskSubmitting ? "提交中…" : "创建任务"}
+              {taskSubmitting ? "Submitting..." : "Create Task"}
             </button>
             {taskError ? <p className="action-panel__error">{taskError}</p> : null}
             {taskResult ? (
               <p>
-                已创建：<code>{taskResult.id}</code> · 状态 {taskResult.status}
+                Created: <code>{taskResult.id}</code> · Status {taskResult.status}
               </p>
             ) : null}
           </section>
           <section className="action-panel">
-            <h3>Runner 接单（内部）</h3>
+            <h3>Runner Accept (Internal)</h3>
             <label>
               Runner ID
               <input
@@ -224,14 +224,14 @@ export default function App(): JSX.Element {
               onClick={submitAccept}
               disabled={runnerSubmitting || !runnerTaskId.trim()}
             >
-              {runnerSubmitting ? "处理中…" : "标记接单"}
+              {runnerSubmitting ? "Processing..." : "Mark Accepted"}
             </button>
             {runnerError ? (
               <p className="action-panel__error">{runnerError}</p>
             ) : null}
             {runnerResult ? (
               <p>
-                Task <code>{runnerResult.id}</code> 当前状态 {runnerResult.status}
+                Task <code>{runnerResult.id}</code> status is {runnerResult.status}
               </p>
             ) : null}
           </section>

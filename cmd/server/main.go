@@ -20,7 +20,7 @@ import (
 	"skip/internal/repository"
 )
 
-// rewriteRedirectLocation 修正子路径下 FileServer 把 Location 写成 "/" 导致浏览器跳到站点根的问题。
+// rewriteRedirectLocation rewrites Location headers so subpath deployments don't redirect to "/".
 func rewriteRedirectLocation(baseNoSlash string, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ServeHTTP(&redirectPrefixRW{ResponseWriter: w, base: baseNoSlash}, r)
@@ -53,8 +53,8 @@ func (w *redirectPrefixRW) Flush() {
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	dbPath := flag.String("db", filepath.Join("data", "app.db"), "sqlite database file path")
-	basePath := flag.String("base", "", "挂载在子路径时设置，例如 /skip（与 Nginx location /skip/ 及 VITE_BASE_PATH=/skip/ 一致）")
-	staticPath := flag.String("static", "", "SPA 静态目录，例如 web/dist（部署时建议设置）")
+	basePath := flag.String("base", "", "Mount base path, for example /skip (must match reverse proxy path and VITE_BASE_PATH).")
+	staticPath := flag.String("static", "", "SPA static directory, for example web/dist.")
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))

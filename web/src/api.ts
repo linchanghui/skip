@@ -1,6 +1,6 @@
 import type { Area, QueueSignal, Store, StoreDetail, Task } from "./types";
 
-/** 与 Vite base（VITE_BASE_PATH）对齐，使生产环境请求落在 /skip/v1/... 等同源路径。 */
+/** Align API root with Vite base (VITE_BASE_PATH) so production requests stay same-origin (e.g. /skip/v1/...). */
 function apiBase(): string {
   const explicit = import.meta.env.VITE_API_BASE?.trim() ?? "";
   if (explicit) {

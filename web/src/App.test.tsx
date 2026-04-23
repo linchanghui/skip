@@ -110,7 +110,7 @@ describe("App", () => {
     );
   });
 
-  it("在没有 Maps Key 时显示占位说明并渲染门店名", async () => {
+  it("shows placeholder without Maps key and renders store name", async () => {
     render(<App />);
     expect(
       await screen.findByText(/VITE_GOOGLE_MAPS_API_KEY/i),
@@ -118,30 +118,38 @@ describe("App", () => {
     expect(await screen.findByText("Starbucks (Jewel)")).toBeInTheDocument();
   });
 
-  it("显示过期 queue signal 提示", async () => {
+  it("shows stale queue signal hint", async () => {
     render(<App />);
     expect(
-      await screen.findByText(/数据较旧，以下单实时执行为准/),
+      await screen.findByText(
+        /This signal is stale. Please rely on task execution for real-time results./,
+      ),
     ).toBeInTheDocument();
   });
 
-  it("可创建任务并显示结果", async () => {
+  it("creates a task and shows result", async () => {
     render(<App />);
-    const createBtns = await screen.findAllByRole("button", { name: "创建任务" });
+    const createBtns = await screen.findAllByRole("button", {
+      name: "Create Task",
+    });
     const createBtn = createBtns[0];
     fireEvent.click(createBtn);
-    expect(await screen.findByText(/已创建：/)).toBeInTheDocument();
-    expect(await screen.findByText(/状态 matching/)).toBeInTheDocument();
+    expect(await screen.findByText(/Created:/)).toBeInTheDocument();
+    expect(await screen.findByText(/Status matching/)).toBeInTheDocument();
   });
 
-  it("可进行 runner 接单并显示 accepted", async () => {
+  it("accepts task from runner panel and shows accepted", async () => {
     render(<App />);
-    const createBtns = await screen.findAllByRole("button", { name: "创建任务" });
+    const createBtns = await screen.findAllByRole("button", {
+      name: "Create Task",
+    });
     const createBtn = createBtns[0];
     fireEvent.click(createBtn);
-    const acceptBtns = await screen.findAllByRole("button", { name: "标记接单" });
+    const acceptBtns = await screen.findAllByRole("button", {
+      name: "Mark Accepted",
+    });
     const acceptBtn = acceptBtns[0];
     fireEvent.click(acceptBtn);
-    expect(await screen.findByText(/当前状态 accepted/)).toBeInTheDocument();
+    expect(await screen.findByText(/status is accepted/)).toBeInTheDocument();
   });
 });

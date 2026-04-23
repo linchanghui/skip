@@ -9,21 +9,21 @@ type Props = {
 function busyLabel(level: string | undefined): string {
   switch (level) {
     case "quiet":
-      return "空闲";
+      return "Quiet";
     case "moderate":
-      return "适中";
+      return "Moderate";
     case "busy":
-      return "繁忙";
+      return "Busy";
     case "closed":
-      return "休息";
+      return "Closed";
     default:
-      return "未知";
+      return "Unknown";
   }
 }
 
 export function StoreList({ stores, selectedId, onSelect }: Props): JSX.Element {
   return (
-    <ul className="store-list" aria-label="门店列表">
+    <ul className="store-list" aria-label="Store list">
       {stores.map((s) => (
         <li key={s.id}>
           <button
@@ -38,11 +38,11 @@ export function StoreList({ stores, selectedId, onSelect }: Props): JSX.Element 
               <span className="store-list__meta">
                 {busyLabel(s.latest_status.busy_level)}
                 {s.latest_status.wait_minutes_est != null
-                  ? ` · 约 ${s.latest_status.wait_minutes_est} 分钟`
+                  ? ` · ~${s.latest_status.wait_minutes_est} min`
                   : ""}
               </span>
             ) : (
-              <span className="store-list__meta">暂无状态</span>
+              <span className="store-list__meta">No status yet</span>
             )}
           </button>
         </li>

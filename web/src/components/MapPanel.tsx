@@ -99,21 +99,21 @@ export function MapPanel({
   if (!apiKey) {
     return (
       <div className="map-panel map-panel--placeholder">
-        <p className="map-panel__title">地图（Maps JavaScript API）</p>
+        <p className="map-panel__title">Map (Maps JavaScript API)</p>
         <p>
-          当前未配置 <code>VITE_GOOGLE_MAPS_API_KEY</code>
-          。列表与详情可正常使用；配置密钥并重启{" "}
-          <code>npm run dev</code> 后将显示 Google 地图与标记。
+          <code>VITE_GOOGLE_MAPS_API_KEY</code> is not configured. The list and
+          details still work. Set the key and restart <code>npm run dev</code>{" "}
+          to render Google Maps markers.
         </p>
         <p className="map-panel__hint">
-          开通步骤见设计文档「5.1 Google Cloud 与 API Key」。
+          See the design doc section "5.1 Google Cloud & API Key" for setup.
         </p>
       </div>
     );
   }
 
   if (!area) {
-    return <div className="map-panel map-panel--placeholder">加载区域信息…</div>;
+    return <div className="map-panel map-panel--placeholder">Loading area data...</div>;
   }
 
   return (

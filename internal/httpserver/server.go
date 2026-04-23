@@ -22,7 +22,7 @@ type Server struct {
 	Log      *slog.Logger
 	Repo     *repository.Store
 	AdminKey string
-	// StaticDir 非空时，对未匹配路由的 GET/HEAD 尝试返回静态文件或 index.html（SPA）。
+	// If StaticDir is set, unmatched GET/HEAD routes fall back to static files or index.html (SPA).
 	StaticDir string
 }
 

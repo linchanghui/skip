@@ -10,13 +10,13 @@ type Props = {
 function busyLabel(level: string): string {
   switch (level) {
     case "quiet":
-      return "空闲";
+      return "Quiet";
     case "moderate":
-      return "适中";
+      return "Moderate";
     case "busy":
-      return "繁忙";
+      return "Busy";
     case "closed":
-      return "休息";
+      return "Closed";
     default:
       return level;
   }
@@ -32,61 +32,63 @@ export function StoreDetail({
     return <div className="store-detail store-detail--error">{error}</div>;
   }
   if (loading) {
-    return <div className="store-detail">加载详情…</div>;
+    return <div className="store-detail">Loading details...</div>;
   }
   if (!detail) {
-    return <div className="store-detail">请选择一家门店。</div>;
+    return <div className="store-detail">Please select a store.</div>;
   }
 
   return (
     <section className="store-detail" aria-live="polite">
       <h2 className="store-detail__title">{detail.name}</h2>
       <p className="store-detail__sub">
-        {[detail.terminal, detail.floor].filter(Boolean).join(" · ") || "樟宜 Demo"}
+        {[detail.terminal, detail.floor].filter(Boolean).join(" · ") ||
+          "Changi Demo"}
       </p>
       {detail.latest_status ? (
         <dl className="store-detail__dl">
           <div>
-            <dt>繁忙度</dt>
+            <dt>Busyness</dt>
             <dd>{busyLabel(detail.latest_status.busy_level)}</dd>
           </div>
           {detail.latest_status.queue_length != null ? (
             <div>
-              <dt>排队长度</dt>
+              <dt>Queue length</dt>
               <dd>{detail.latest_status.queue_length}</dd>
             </div>
           ) : null}
           {detail.latest_status.wait_minutes_est != null ? (
             <div>
-              <dt>预计等待</dt>
-              <dd>约 {detail.latest_status.wait_minutes_est} 分钟</dd>
+              <dt>Estimated wait</dt>
+              <dd>~{detail.latest_status.wait_minutes_est} min</dd>
             </div>
           ) : null}
           <div>
-            <dt>更新时间</dt>
+            <dt>Updated at</dt>
             <dd>{new Date(detail.latest_status.as_of).toLocaleString()}</dd>
           </div>
         </dl>
       ) : (
-        <p>暂无最新状态。</p>
+        <p>No latest status.</p>
       )}
 
       {queueSignal ? (
         <section className="store-detail__signal">
-          <h3 className="store-detail__history-title">实时信号（MVP）</h3>
+          <h3 className="store-detail__history-title">Live Signal (MVP)</h3>
           <p>
-            最近更新：{new Date(queueSignal.last_updated_at).toLocaleString()}（
-            {queueSignal.last_updated_x_mins_ago} 分钟前）
+            Last update: {new Date(queueSignal.last_updated_at).toLocaleString()}
+            {" ("}
+            {queueSignal.last_updated_x_mins_ago} min ago)
           </p>
           {queueSignal.status_expired || !queueSignal.signal ? (
             <p className="store-detail__expired">
-              数据较旧，以下单实时执行为准。
+              This signal is stale. Please rely on task execution for real-time results.
             </p>
           ) : (
             <p>
-              当前：{busyLabel(queueSignal.signal.busy_level)}
+              Current: {busyLabel(queueSignal.signal.busy_level)}
               {queueSignal.signal.wait_minutes_est != null
-                ? ` · 约 ${queueSignal.signal.wait_minutes_est} 分钟`
+                ? ` · ~${queueSignal.signal.wait_minutes_est} min`
                 : ""}
             </p>
           )}
@@ -95,7 +97,7 @@ export function StoreDetail({
 
       {detail.status_history?.length ? (
         <>
-          <h3 className="store-detail__history-title">最近上报</h3>
+          <h3 className="store-detail__history-title">Recent Reports</h3>
           <ol className="store-detail__history">
             {detail.status_history.slice(0, 8).map((h) => (
               <li key={h.id}>
@@ -104,7 +106,7 @@ export function StoreDetail({
                 </time>
                 {" · "}
                 {busyLabel(h.busy_level)}
-                {h.queue_length != null ? ` · 排队 ${h.queue_length}` : ""}
+                {h.queue_length != null ? ` · Queue ${h.queue_length}` : ""}
               </li>
             ))}
           </ol>
