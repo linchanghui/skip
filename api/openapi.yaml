@@ -116,6 +116,298 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
 
+  /v1/tasks:
+    post:
+      operationId: createTask
+      summary: Create a queue-for-me task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/tasks/{id}:
+    get:
+      operationId: getTask
+      summary: Get task detail
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/tasks/{id}/cancel:
+    post:
+      operationId: cancelTask
+      summary: Cancel task by user
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelTaskInput"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/runners/apply:
+    post:
+      operationId: applyRunner
+      summary: Apply as runner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunnerApplyInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Runner"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/runners/{id}/availability:
+    post:
+      operationId: setRunnerAvailability
+      summary: Set runner online/offline and location
+      parameters:
+        - $ref: "#/components/parameters/RunnerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunnerAvailabilityInput"
+      responses:
+        "200":
+          description: Availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunnerAvailability"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/tasks/{id}/accept:
+    post:
+      operationId: acceptTask
+      summary: Runner accepts a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskActionByRunnerInput"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tasks/{id}/arrive:
+    post:
+      operationId: arriveTask
+      summary: Runner marks arrived
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskActionByRunnerInput"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      summary: Runner marks completed
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskActionByRunnerInput"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/tasks/{id}/proofs:
+    post:
+      operationId: createTaskProof
+      summary: Add task proof
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskProofInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskProof"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/stores/{id}/queue-reports:
+    post:
+      operationId: createQueueReport
+      summary: Submit queue signal for a store
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQueueReportInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueReport"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/stores/{id}/queue-signal:
+    get:
+      operationId: getQueueSignal
+      summary: Get latest queue signal for a store (with expiry)
+      parameters:
+        - $ref: "#/components/parameters/StoreId"
+      responses:
+        "200":
+          description: Queue signal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueSignal"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/metrics/summary:
+    get:
+      operationId: getMetricsSummary
+      summary: Get MVP operational summary metrics
+      responses:
+        "200":
+          description: Metrics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsSummary"
+
+  /v1/ops/tasks/{id}/assign:
+    post:
+      operationId: assignTaskByOps
+      summary: Ops manually assigns task to runner
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignTaskInput"
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/ops/queue-reports/{id}/hide:
+    post:
+      operationId: hideQueueReportByOps
+      summary: Ops marks a queue report as low confidence
+      parameters:
+        - $ref: "#/components/parameters/QueueReportId"
+      responses:
+        "200":
+          description: Queue report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueReport"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   parameters:
     StoreId:
@@ -124,6 +416,25 @@ components:
       required: true
       schema:
         type: string
+    TaskId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    RunnerId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    QueueReportId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
 
   responses:
     BadRequest:
@@ -140,6 +451,12 @@ components:
             $ref: "#/components/schemas/ErrorBody"
     Unauthorized:
       description: Missing or invalid admin key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Conflict:
+      description: Conflict
       content:
         application/json:
           schema:
@@ -166,6 +483,22 @@ components:
     StatusSource:
       type: string
       enum: [merchant, operator, integration, crowd]
+
+    TaskType:
+      type: string
+      enum: [queue_for_me]
+
+    TaskStatus:
+      type: string
+      enum: [created, matching, accepted, arrived, queuing, completed, failed, cancelled]
+
+    RunnerStatus:
+      type: string
+      enum: [candidate, approved, probation, active, suspended, offboarded]
+
+    ReporterType:
+      type: string
+      enum: [runner, user, operator]
 
     LatLng:
       type: object
@@ -298,3 +631,369 @@ components:
         note:
           type: string
           nullable: true
+
+    CreateTaskInput:
+      type: object
+      required: [user_id, store_id, task_type]
+      properties:
+        user_id:
+          type: string
+        store_id:
+          type: string
+        task_type:
+          $ref: "#/components/schemas/TaskType"
+        note:
+          type: string
+          nullable: true
+
+    CancelTaskInput:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          type: string
+
+    Task:
+      type: object
+      required: [id, user_id, store_id, task_type, status, requested_at, sla_accept_by]
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        store_id:
+          type: string
+        task_type:
+          $ref: "#/components/schemas/TaskType"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        accepted_runner_id:
+          type: string
+          nullable: true
+        quoted_price_cents:
+          type: integer
+          nullable: true
+        requested_at:
+          type: string
+          format: date-time
+        sla_accept_by:
+          type: string
+          format: date-time
+        sla_arrive_by:
+          type: string
+          format: date-time
+          nullable: true
+        fail_reason:
+          type: string
+          nullable: true
+        cancelled_by:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TaskEvent:
+      type: object
+      required: [id, task_id, to_status, actor_type, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        task_id:
+          type: string
+        from_status:
+          type: string
+          nullable: true
+        to_status:
+          type: string
+        actor_type:
+          type: string
+        actor_id:
+          type: string
+          nullable: true
+        payload:
+          type: object
+          additionalProperties: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    TaskDetail:
+      allOf:
+        - $ref: "#/components/schemas/Task"
+        - type: object
+          properties:
+            events:
+              type: array
+              items:
+                $ref: "#/components/schemas/TaskEvent"
+
+    RunnerApplyInput:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        service_area:
+          type: string
+          nullable: true
+
+    Runner:
+      type: object
+      required: [id, name, phone, status, service_area, reliability_score, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        status:
+          $ref: "#/components/schemas/RunnerStatus"
+        service_area:
+          type: string
+        reliability_score:
+          type: number
+          format: double
+        agreement_version:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RunnerAvailabilityInput:
+      type: object
+      required: [is_online]
+      properties:
+        is_online:
+          type: boolean
+        location:
+          $ref: "#/components/schemas/LatLng"
+          nullable: true
+
+    RunnerAvailability:
+      type: object
+      required: [runner_id, is_online, last_ping_at, updated_at]
+      properties:
+        runner_id:
+          type: string
+        is_online:
+          type: boolean
+        location:
+          $ref: "#/components/schemas/LatLng"
+          nullable: true
+        active_task_id:
+          type: string
+          nullable: true
+        last_ping_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TaskActionByRunnerInput:
+      type: object
+      required: [runner_id]
+      properties:
+        runner_id:
+          type: string
+        note:
+          type: string
+          nullable: true
+
+    CreateTaskProofInput:
+      type: object
+      required: [runner_id, proof_type]
+      properties:
+        runner_id:
+          type: string
+        proof_type:
+          type: string
+          enum: [arrived_photo, queue_progress_photo, completion_photo, text_note]
+        media_url:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+
+    TaskProof:
+      type: object
+      required: [id, task_id, proof_type, captured_at, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        task_id:
+          type: string
+        runner_id:
+          type: string
+          nullable: true
+        proof_type:
+          type: string
+        media_url:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        captured_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    CreateQueueReportInput:
+      type: object
+      required: [reporter_type, busy_level]
+      properties:
+        reporter_type:
+          $ref: "#/components/schemas/ReporterType"
+        reporter_id:
+          type: string
+          nullable: true
+        queue_length:
+          type: integer
+          nullable: true
+        wait_minutes_est:
+          type: integer
+          nullable: true
+        busy_level:
+          $ref: "#/components/schemas/BusyLevel"
+        evidence_url:
+          type: string
+          nullable: true
+        ttl_minutes:
+          type: integer
+          minimum: 1
+          maximum: 180
+          default: 30
+
+    QueueReport:
+      type: object
+      required: [id, store_id, reporter_type, busy_level, confidence_flag, reported_at, expires_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        store_id:
+          type: string
+        reporter_type:
+          $ref: "#/components/schemas/ReporterType"
+        reporter_id:
+          type: string
+          nullable: true
+        queue_length:
+          type: integer
+          nullable: true
+        wait_minutes_est:
+          type: integer
+          nullable: true
+        busy_level:
+          $ref: "#/components/schemas/BusyLevel"
+        evidence_url:
+          type: string
+          nullable: true
+        confidence_flag:
+          type: string
+          enum: [normal, low]
+        reported_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    QueueSignal:
+      type: object
+      required: [store_id, status_expired, last_updated_at, last_updated_x_mins_ago]
+      properties:
+        store_id:
+          type: string
+        status_expired:
+          type: boolean
+        last_updated_at:
+          type: string
+          format: date-time
+        last_updated_x_mins_ago:
+          type: integer
+        signal:
+          type: object
+          nullable: true
+          properties:
+            queue_length:
+              type: integer
+              nullable: true
+            wait_minutes_est:
+              type: integer
+              nullable: true
+            busy_level:
+              $ref: "#/components/schemas/BusyLevel"
+            confidence_flag:
+              type: string
+              enum: [normal, low]
+            reporter_type:
+              $ref: "#/components/schemas/ReporterType"
+            reporter_id:
+              type: string
+              nullable: true
+            expires_at:
+              type: string
+              format: date-time
+
+    AssignTaskInput:
+      type: object
+      required: [runner_id, ops_id]
+      properties:
+        runner_id:
+          type: string
+        ops_id:
+          type: string
+
+    MetricsSummary:
+      type: object
+      required:
+        - total_tasks
+        - completed_tasks
+        - completion_rate_pct
+        - reassigned_tasks
+        - reassignment_rate_pct
+        - total_queue_reports
+        - expired_queue_reports
+        - expired_signal_ratio_pct
+      properties:
+        total_tasks:
+          type: integer
+        completed_tasks:
+          type: integer
+        completion_rate_pct:
+          type: integer
+        reassigned_tasks:
+          type: integer
+        reassignment_rate_pct:
+          type: integer
+        accept_p50_seconds:
+          type: integer
+          nullable: true
+        total_queue_reports:
+          type: integer
+        expired_queue_reports:
+          type: integer
+        expired_signal_ratio_pct:
+          type: integer

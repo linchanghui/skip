@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import App from "./App";
 
@@ -49,18 +49,58 @@ const detail = {
   ],
 };
 
+const queueSignalExpired = {
+  store_id: "sb-jewel",
+  status_expired: true,
+  last_updated_at: "2026-04-20T09:00:00Z",
+  last_updated_x_mins_ago: 80,
+  signal: null,
+};
+
 describe("App", () => {
   beforeEach(() => {
     vi.stubEnv("VITE_GOOGLE_MAPS_API_KEY", "");
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === "string" ? input : input.toString();
+        if (url.endsWith("/v1/tasks") && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              id: "task-new-1",
+              user_id: "user-web",
+              store_id: "sb-jewel",
+              task_type: "queue_for_me",
+              status: "matching",
+              requested_at: "2026-04-20T10:02:00Z",
+              sla_accept_by: "2026-04-20T10:07:00Z",
+            }),
+            { status: 201 },
+          );
+        }
+        if (url.includes("/v1/tasks/task-new-1/accept") && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              id: "task-new-1",
+              user_id: "user-web",
+              store_id: "sb-jewel",
+              task_type: "queue_for_me",
+              status: "accepted",
+              accepted_runner_id: "runner-alex",
+              requested_at: "2026-04-20T10:02:00Z",
+              sla_accept_by: "2026-04-20T10:07:00Z",
+            }),
+            { status: 200 },
+          );
+        }
         if (url.includes("/v1/areas/changi")) {
           return new Response(JSON.stringify(area), { status: 200 });
         }
         if (url.includes("/v1/stores?") && url.includes("area_id=changi")) {
           return new Response(JSON.stringify(stores), { status: 200 });
+        }
+        if (url.includes("/v1/stores/sb-jewel/queue-signal")) {
+          return new Response(JSON.stringify(queueSignalExpired), { status: 200 });
         }
         if (url.includes("/v1/stores/sb-jewel")) {
           return new Response(JSON.stringify(detail), { status: 200 });
@@ -76,5 +116,32 @@ describe("App", () => {
       await screen.findByText(/VITE_GOOGLE_MAPS_API_KEY/i),
     ).toBeInTheDocument();
     expect(await screen.findByText("Starbucks (Jewel)")).toBeInTheDocument();
+  });
+
+  it("显示过期 queue signal 提示", async () => {
+    render(<App />);
+    expect(
+      await screen.findByText(/数据较旧，以下单实时执行为准/),
+    ).toBeInTheDocument();
+  });
+
+  it("可创建任务并显示结果", async () => {
+    render(<App />);
+    const createBtns = await screen.findAllByRole("button", { name: "创建任务" });
+    const createBtn = createBtns[0];
+    fireEvent.click(createBtn);
+    expect(await screen.findByText(/已创建：/)).toBeInTheDocument();
+    expect(await screen.findByText(/状态 matching/)).toBeInTheDocument();
+  });
+
+  it("可进行 runner 接单并显示 accepted", async () => {
+    render(<App />);
+    const createBtns = await screen.findAllByRole("button", { name: "创建任务" });
+    const createBtn = createBtns[0];
+    fireEvent.click(createBtn);
+    const acceptBtns = await screen.findAllByRole("button", { name: "标记接单" });
+    const acceptBtn = acceptBtns[0];
+    fireEvent.click(acceptBtn);
+    expect(await screen.findByText(/当前状态 accepted/)).toBeInTheDocument();
   });
 });

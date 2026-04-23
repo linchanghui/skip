@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -68,9 +69,9 @@ func TestInsertStatusReport(t *testing.T) {
 	ctx := context.Background()
 	ql := 3
 	rep, err := repo.InsertStatusReport(ctx, "sb-t3", domain.StatusReportInput{
-		BusyLevel:      domain.BusyQuiet,
-		QueueLength:    &ql,
-		Source:         domain.SourceOperator,
+		BusyLevel:   domain.BusyQuiet,
+		QueueLength: &ql,
+		Source:      domain.SourceOperator,
 	}, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -84,5 +85,67 @@ func TestInsertStatusReport(t *testing.T) {
 	}
 	if d.LatestStatus == nil || d.LatestStatus.BusyLevel != domain.BusyQuiet {
 		t.Fatalf("latest: %+v", d.LatestStatus)
+	}
+}
+
+func TestTaskAndQueueFlows(t *testing.T) {
+	sqlDB := openTestDB(t)
+	repo := &Store{DB: sqlDB}
+	ctx := context.Background()
+
+	task, err := repo.CreateTask(ctx, domain.CreateTaskInput{
+		UserID:   "user-test",
+		StoreID:  "sb-jewel",
+		TaskType: domain.TaskTypeQueueForMe,
+	}, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if task.Status != domain.TaskStatusMatching {
+		t.Fatalf("want matching got %s", task.Status)
+	}
+	accepted, err := repo.AcceptTask(ctx, task.ID, "runner-alex", time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if accepted.Status != domain.TaskStatusAccepted {
+		t.Fatalf("want accepted got %s", accepted.Status)
+	}
+
+	ttl := 20
+	report, err := repo.CreateQueueReport(ctx, "sb-jewel", domain.CreateQueueReportInput{
+		ReporterType: domain.ReporterRunner,
+		ReporterID:   strPtr("runner-alex"),
+		BusyLevel:    domain.BusyModerate,
+		TTLMinutes:   &ttl,
+	}, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.ID == 0 {
+		t.Fatal("expected queue report id")
+	}
+	sig, err := repo.GetQueueSignal(ctx, "sb-jewel", time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sig.StoreID != "sb-jewel" {
+		t.Fatalf("signal: %+v", sig)
+	}
+}
+
+func TestMetricsSummary(t *testing.T) {
+	sqlDB := openTestDB(t)
+	repo := &Store{DB: sqlDB}
+	ctx := context.Background()
+	sum, err := repo.GetMetricsSummary(ctx, time.Date(2026, 4, 23, 6, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum.TotalTasks < 1 {
+		t.Fatalf("expected seeded tasks, got %+v", sum)
+	}
+	if sum.TotalQueueReports < 1 {
+		t.Fatalf("expected seeded queue reports, got %+v", sum)
 	}
 }

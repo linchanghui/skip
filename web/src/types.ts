@@ -57,3 +57,42 @@ export interface StatusReport {
 export interface StoreDetail extends Store {
   status_history: StatusReport[];
 }
+
+export interface QueueSignalValue {
+  queue_length?: number | null;
+  wait_minutes_est?: number | null;
+  busy_level: BusyLevel;
+  confidence_flag: "normal" | "low";
+  reporter_type: "runner" | "user" | "operator";
+  reporter_id?: string | null;
+  expires_at: string;
+}
+
+export interface QueueSignal {
+  store_id: string;
+  status_expired: boolean;
+  last_updated_at: string;
+  last_updated_x_mins_ago: number;
+  signal?: QueueSignalValue | null;
+}
+
+export type TaskStatus =
+  | "created"
+  | "matching"
+  | "accepted"
+  | "arrived"
+  | "queuing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface Task {
+  id: string;
+  user_id: string;
+  store_id: string;
+  task_type: "queue_for_me";
+  status: TaskStatus;
+  accepted_runner_id?: string | null;
+  requested_at: string;
+  sla_accept_by: string;
+}

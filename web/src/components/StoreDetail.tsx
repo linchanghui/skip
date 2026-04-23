@@ -1,7 +1,8 @@
-import type { StoreDetail } from "../types";
+import type { QueueSignal, StoreDetail } from "../types";
 
 type Props = {
   detail: StoreDetail | null;
+  queueSignal: QueueSignal | null;
   loading: boolean;
   error: string | null;
 };
@@ -21,7 +22,12 @@ function busyLabel(level: string): string {
   }
 }
 
-export function StoreDetail({ detail, loading, error }: Props): JSX.Element {
+export function StoreDetail({
+  detail,
+  queueSignal,
+  loading,
+  error,
+}: Props): JSX.Element {
   if (error) {
     return <div className="store-detail store-detail--error">{error}</div>;
   }
@@ -64,6 +70,28 @@ export function StoreDetail({ detail, loading, error }: Props): JSX.Element {
       ) : (
         <p>暂无最新状态。</p>
       )}
+
+      {queueSignal ? (
+        <section className="store-detail__signal">
+          <h3 className="store-detail__history-title">实时信号（MVP）</h3>
+          <p>
+            最近更新：{new Date(queueSignal.last_updated_at).toLocaleString()}（
+            {queueSignal.last_updated_x_mins_ago} 分钟前）
+          </p>
+          {queueSignal.status_expired || !queueSignal.signal ? (
+            <p className="store-detail__expired">
+              数据较旧，以下单实时执行为准。
+            </p>
+          ) : (
+            <p>
+              当前：{busyLabel(queueSignal.signal.busy_level)}
+              {queueSignal.signal.wait_minutes_est != null
+                ? ` · 约 ${queueSignal.signal.wait_minutes_est} 分钟`
+                : ""}
+            </p>
+          )}
+        </section>
+      ) : null}
 
       {detail.status_history?.length ? (
         <>

@@ -114,3 +114,58 @@ func TestPostStatusWithKey(t *testing.T) {
 		t.Fatalf("status %d body %s", res.StatusCode, body)
 	}
 }
+
+func TestCreateAndGetTask(t *testing.T) {
+	ts := newTestServer(t, "secret")
+	defer ts.Close()
+
+	res, err := http.Post(ts.URL+"/v1/tasks", "application/json", strings.NewReader(`{"user_id":"u-1","store_id":"sb-jewel","task_type":"queue_for_me"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(res.Body)
+		t.Fatalf("create status %d body %s", res.StatusCode, body)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), `"status":"matching"`) || !strings.Contains(string(body), `"id":"task-`) {
+		t.Fatalf("create body %s", body)
+	}
+}
+
+func TestQueueSignal(t *testing.T) {
+	ts := newTestServer(t, "secret")
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/v1/stores/sb-jewel/queue-signal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status %d", res.StatusCode)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), `"store_id":"sb-jewel"`) {
+		t.Fatalf("body %s", body)
+	}
+}
+
+func TestMetricsSummary(t *testing.T) {
+	ts := newTestServer(t, "secret")
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/v1/metrics/summary")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status %d", res.StatusCode)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), `"total_tasks"`) || !strings.Contains(string(body), `"expired_signal_ratio_pct"`) {
+		t.Fatalf("body %s", body)
+	}
+}

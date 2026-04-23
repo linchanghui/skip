@@ -5,6 +5,7 @@
 ## 文档
 
 - [阶段 1：门店排队地图（Web MVP / 樟宜 Demo）设计文档](docs/queue-map-phase1-design.md)
+- [MVP 技术设计：任务分发 + 初始 runners + 门店排队上报](docs/mvp-task-dispatch-td.md)
 
 ## 实现阶段（与测试）
 
@@ -25,6 +26,21 @@ go run ./cmd/server
 ```
 
 上报排队需设置环境变量 `SKIP_ADMIN_API_KEY`，请求头携带 `X-Admin-Key`（与设计一致）。
+
+启动后会自动写入一批 SQLite mock 数据（幂等）：
+
+- 2 家示例门店（`stores`）+ 初始排队状态
+- runners（`runners` / `runner_availability`）
+- 示例任务与分发轨迹（`tasks` / `task_attempts` / `task_events` / `task_proofs`）
+- 门店排队上报（`queue_reports`，含未过期与已过期样例）
+
+可用 `sqlite3 data/app.db` 快速查看，例如：
+
+```sql
+SELECT id, status, accepted_runner_id FROM tasks ORDER BY id;
+SELECT id, name, status FROM runners ORDER BY id;
+SELECT store_id, busy_level, reported_at, expires_at FROM queue_reports ORDER BY reported_at DESC;
+```
 
 **终端 B — 前端**（Vite 将 `/v1`、`/healthz` 代理到 `http://127.0.0.1:8080`）：
 

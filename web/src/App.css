@@ -150,6 +150,61 @@
   color: #475569;
 }
 
+.store-detail__signal {
+  margin-top: 0.8rem;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 0.6rem;
+}
+
+.store-detail__expired {
+  color: #b45309;
+}
+
+.action-panel {
+  margin-top: 0.9rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.action-panel h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.action-panel label {
+  display: grid;
+  gap: 0.2rem;
+  color: #334155;
+}
+
+.action-panel input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.45rem;
+}
+
+.action-panel button {
+  border: 1px solid #1d4ed8;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+
+.action-panel button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-panel__error {
+  color: #b91c1c;
+  margin: 0;
+}
+
 .map-panel {
   min-height: 280px;
   background: #e2e8f0;
