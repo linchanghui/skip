@@ -134,6 +134,24 @@ func TestCreateAndGetTask(t *testing.T) {
 	}
 }
 
+func TestListTasksWithFilter(t *testing.T) {
+	ts := newTestServer(t, "secret")
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/v1/tasks?status=matching")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status %d", res.StatusCode)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), `"tasks"`) {
+		t.Fatalf("body %s", body)
+	}
+}
+
 func TestQueueSignal(t *testing.T) {
 	ts := newTestServer(t, "secret")
 	defer ts.Close()

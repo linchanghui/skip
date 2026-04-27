@@ -6,6 +6,7 @@
 
 - [阶段 1：门店排队地图（Web MVP / 樟宜 Demo）设计文档](docs/queue-map-phase1-design.md)
 - [MVP 技术设计：任务分发 + 初始 runners + 门店排队上报](docs/mvp-task-dispatch-td.md)
+- [入口页 TD：角色选择 + 下任务/接任务分流](docs/entry-portal-role-routing-td.md)
 
 ## 实现阶段（与测试）
 

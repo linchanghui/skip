@@ -3,6 +3,7 @@ package httpserver
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,26 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, task)
+}
+
+func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
+	statuses := strings.Split(strings.TrimSpace(r.URL.Query().Get("status")), ",")
+	runnerID := strings.TrimSpace(r.URL.Query().Get("runner_id"))
+	limit := 20
+	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "bad_request", "limit must be an integer")
+			return
+		}
+		limit = n
+	}
+	tasks, err := s.taskService().ListTasks(r.Context(), statuses, runnerID, limit)
+	if err != nil {
+		writeServiceErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"tasks": tasks})
 }
 
 func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {

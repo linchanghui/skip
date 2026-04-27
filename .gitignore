@@ -3,3 +3,13 @@ data/
 web/node_modules/
 web/dist/
 .DS_Store
+
+# Local/env secrets (never commit)
+.env
+.env.local
+.env.production
+.env.production.local
+web/.env
+web/.env.local
+web/.env.production
+web/.env.production.local

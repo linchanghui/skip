@@ -18,6 +18,7 @@ export function MapPanel({
   const mapEl = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const apiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "").trim();
 
@@ -44,6 +45,10 @@ export function MapPanel({
         }
         markersRef.current.forEach((m) => m.setMap(null));
         markersRef.current = [];
+        if (infoWindowRef.current) {
+          infoWindowRef.current.close();
+        }
+        infoWindowRef.current = new google.maps.InfoWindow();
 
         const map = new google.maps.Map(el, {
           center: {
@@ -58,12 +63,41 @@ export function MapPanel({
         mapRef.current = map;
 
         for (const s of stores) {
+          const stale = isStaleStatus(s);
+          const queueLabel = queueLabelText(s);
+          const busyColor = markerColor(s.latest_status?.busy_level);
           const marker = new google.maps.Marker({
             map,
             position: { lat: s.location.lat, lng: s.location.lng },
             title: s.name,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 11,
+              fillColor: busyColor,
+              fillOpacity: 0.95,
+              strokeColor: "#ffffff",
+              strokeWeight: 2,
+            },
+            label: {
+              text: queueLabel,
+              color: "#ffffff",
+              fontSize: "11px",
+              fontWeight: "700",
+            },
           });
-          marker.addListener("click", () => onSelectStore(s.id));
+          marker.addListener("click", () => {
+            onSelectStore(s.id);
+            if (!infoWindowRef.current) {
+              return;
+            }
+            infoWindowRef.current.setContent(
+              buildInfoWindowContent(s, stale),
+            );
+            infoWindowRef.current.open({
+              map,
+              anchor: marker,
+            });
+          });
           markersRef.current.push(marker);
         }
         if (!cancelled) {
@@ -80,6 +114,9 @@ export function MapPanel({
       cancelled = true;
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
+      if (infoWindowRef.current) {
+        infoWindowRef.current.close();
+      }
       mapRef.current = null;
       setMapReady(false);
     };
@@ -124,4 +161,87 @@ export function MapPanel({
       aria-label="Google Map"
     />
   );
+}
+
+function markerColor(level: string | undefined): string {
+  switch (level) {
+    case "quiet":
+      return "#16a34a";
+    case "moderate":
+      return "#d97706";
+    case "busy":
+      return "#dc2626";
+    case "closed":
+      return "#64748b";
+    default:
+      return "#2563eb";
+  }
+}
+
+function queueLabelText(store: Store): string {
+  if (store.latest_status?.queue_length == null) {
+    return "--";
+  }
+  const n = store.latest_status.queue_length;
+  if (n > 99) {
+    return "99+";
+  }
+  return String(n);
+}
+
+function isStaleStatus(store: Store): boolean {
+  const asOf = store.latest_status?.as_of;
+  if (!asOf) {
+    return true;
+  }
+  const t = new Date(asOf).getTime();
+  if (!Number.isFinite(t)) {
+    return true;
+  }
+  return Date.now() - t > 30 * 60 * 1000;
+}
+
+function busyLabel(level: string | undefined): string {
+  switch (level) {
+    case "quiet":
+      return "Quiet";
+    case "moderate":
+      return "Moderate";
+    case "busy":
+      return "Busy";
+    case "closed":
+      return "Closed";
+    default:
+      return "Unknown";
+  }
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildInfoWindowContent(store: Store, stale: boolean): string {
+  const name = escapeHtml(store.name);
+  const queue =
+    store.latest_status?.queue_length != null
+      ? `${store.latest_status.queue_length}`
+      : "N/A";
+  const wait =
+    store.latest_status?.wait_minutes_est != null
+      ? `${store.latest_status.wait_minutes_est} min`
+      : "N/A";
+  const busy = busyLabel(store.latest_status?.busy_level);
+  const staleText = stale ? " (stale)" : "";
+  return `
+    <div style="min-width:200px;line-height:1.4">
+      <div style="font-weight:700;margin-bottom:4px">${name}</div>
+      <div>Queue: <strong>${queue}</strong> · Wait: <strong>${wait}</strong></div>
+      <div>Status: ${busy}${staleText}</div>
+    </div>
+  `;
 }

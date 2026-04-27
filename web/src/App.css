@@ -63,6 +63,44 @@
   padding: 0.75rem 1rem 1.25rem;
 }
 
+.role-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.role-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.role-panel__helper {
+  margin: 0.35rem 0 0.65rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.role-panel__actions {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.role-panel__actions button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+}
+
+.role-panel__actions button.is-active {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+
 .store-list {
   list-style: none;
   margin: 0 0 1rem;
@@ -186,6 +224,13 @@
   padding: 0.35rem 0.45rem;
 }
 
+.action-panel select {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.35rem 0.45rem;
+  background: #fff;
+}
+
 .action-panel button {
   border: 1px solid #1d4ed8;
   background: #2563eb;
@@ -203,6 +248,23 @@
 .action-panel__error {
   color: #b91c1c;
   margin: 0;
+}
+
+.task-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.task-list button {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f172a;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+  text-align: left;
 }
 
 .map-panel {

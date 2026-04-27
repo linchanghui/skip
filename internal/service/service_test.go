@@ -79,3 +79,32 @@ func TestQueueServiceTTLValidation(t *testing.T) {
 		t.Fatal("expected validation error")
 	}
 }
+
+func TestTaskServiceListTasks(t *testing.T) {
+	repo := openTestRepo(t)
+	svc := &TaskService{Repo: repo}
+
+	tasks, err := svc.ListTasks(context.Background(), []string{"matching"}, "", 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tasks) == 0 {
+		t.Fatal("expected matching tasks")
+	}
+	for _, task := range tasks {
+		if task.Status != domain.TaskStatusMatching {
+			t.Fatalf("unexpected status: %s", task.Status)
+		}
+	}
+}
+
+func TestTaskServiceListTasksValidation(t *testing.T) {
+	repo := openTestRepo(t)
+	svc := &TaskService{Repo: repo}
+	if _, err := svc.ListTasks(context.Background(), []string{"bad-status"}, "", 20); err == nil {
+		t.Fatal("expected invalid status error")
+	}
+	if _, err := svc.ListTasks(context.Background(), []string{"matching"}, "", 101); err == nil {
+		t.Fatal("expected invalid limit error")
+	}
+}

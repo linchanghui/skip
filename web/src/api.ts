@@ -1,4 +1,14 @@
-import type { Area, QueueSignal, Store, StoreDetail, Task } from "./types";
+import type {
+  Area,
+  CreateQueueReportInput,
+  QueueReport,
+  QueueSignal,
+  RunnerAvailability,
+  Store,
+  StoreDetail,
+  Task,
+  TaskListResponse,
+} from "./types";
 
 /** Align API root with Vite base (VITE_BASE_PATH) so production requests stay same-origin (e.g. /skip/v1/...). */
 function apiBase(): string {
@@ -80,4 +90,43 @@ export function acceptTask(input: {
     runner_id: input.runner_id,
     note: input.note ?? "",
   });
+}
+
+export function listTasks(input: {
+  status?: string[];
+  runner_id?: string;
+  limit?: number;
+}): Promise<TaskListResponse> {
+  const q = new URLSearchParams();
+  if (input.status && input.status.length > 0) {
+    q.set("status", input.status.join(","));
+  }
+  if (input.runner_id?.trim()) {
+    q.set("runner_id", input.runner_id.trim());
+  }
+  if (input.limit && input.limit > 0) {
+    q.set("limit", String(input.limit));
+  }
+  const suffix = q.toString();
+  return getJSON<TaskListResponse>(suffix ? `/v1/tasks?${suffix}` : "/v1/tasks");
+}
+
+export function setRunnerAvailability(input: {
+  runner_id: string;
+  is_online: boolean;
+}): Promise<RunnerAvailability> {
+  return postJSON<RunnerAvailability>(
+    `/v1/runners/${encodeURIComponent(input.runner_id)}/availability`,
+    { is_online: input.is_online },
+  );
+}
+
+export function createQueueReport(input: {
+  store_id: string;
+  payload: CreateQueueReportInput;
+}): Promise<QueueReport> {
+  return postJSON<QueueReport>(
+    `/v1/stores/${encodeURIComponent(input.store_id)}/queue-reports`,
+    input.payload,
+  );
 }

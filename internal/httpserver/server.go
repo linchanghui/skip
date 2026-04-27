@@ -39,6 +39,7 @@ func (s *Server) Handler() http.Handler {
 	r.Get("/v1/stores/{id}", s.handleGetStore)
 	r.Post("/v1/stores/{id}/status-reports", s.handlePostStatus)
 	r.Post("/v1/tasks", s.handleCreateTask)
+	r.Get("/v1/tasks", s.handleListTasks)
 	r.Get("/v1/tasks/{id}", s.handleGetTask)
 	r.Post("/v1/tasks/{id}/cancel", s.handleCancelTask)
 	r.Post("/v1/runners/apply", s.handleRunnerApply)

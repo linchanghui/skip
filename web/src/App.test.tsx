@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 const area = {
@@ -58,12 +58,51 @@ const queueSignalExpired = {
 };
 
 describe("App", () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     vi.stubEnv("VITE_GOOGLE_MAPS_API_KEY", "");
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === "string" ? input : input.toString();
+
+        if (url.endsWith("/v1/areas/changi")) {
+          return new Response(JSON.stringify(area), { status: 200 });
+        }
+        if (url.includes("/v1/stores?") && url.includes("area_id=changi")) {
+          return new Response(JSON.stringify(stores), { status: 200 });
+        }
+        if (url.includes("/v1/stores/sb-jewel/queue-signal")) {
+          return new Response(JSON.stringify(queueSignalExpired), { status: 200 });
+        }
+        if (url.includes("/v1/stores/sb-jewel?") && url.includes("history_limit")) {
+          return new Response(JSON.stringify(detail), { status: 200 });
+        }
+        if (url.includes("/v1/tasks?") && url.includes("status=matching")) {
+          return new Response(
+            JSON.stringify({
+              tasks: [
+                {
+                  id: "task-002",
+                  user_id: "user-002",
+                  store_id: "sb-jewel",
+                  task_type: "queue_for_me",
+                  status: "matching",
+                  requested_at: "2026-04-20T10:03:00Z",
+                  sla_accept_by: "2026-04-20T10:08:00Z",
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/v1/tasks?") && url.includes("runner_id=runner-alex")) {
+          return new Response(JSON.stringify({ tasks: [] }), { status: 200 });
+        }
         if (url.endsWith("/v1/tasks") && init?.method === "POST") {
           return new Response(
             JSON.stringify({
@@ -78,78 +117,87 @@ describe("App", () => {
             { status: 201 },
           );
         }
-        if (url.includes("/v1/tasks/task-new-1/accept") && init?.method === "POST") {
+        if (url.includes("/v1/tasks/task-002/accept") && init?.method === "POST") {
           return new Response(
             JSON.stringify({
-              id: "task-new-1",
-              user_id: "user-web",
+              id: "task-002",
+              user_id: "user-002",
               store_id: "sb-jewel",
               task_type: "queue_for_me",
               status: "accepted",
               accepted_runner_id: "runner-alex",
-              requested_at: "2026-04-20T10:02:00Z",
-              sla_accept_by: "2026-04-20T10:07:00Z",
+              requested_at: "2026-04-20T10:03:00Z",
+              sla_accept_by: "2026-04-20T10:08:00Z",
             }),
             { status: 200 },
           );
         }
-        if (url.includes("/v1/areas/changi")) {
-          return new Response(JSON.stringify(area), { status: 200 });
+        if (
+          url.includes("/v1/runners/runner-alex/availability") &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              runner_id: "runner-alex",
+              is_online: true,
+              active_task_id: null,
+              last_ping_at: "2026-04-20T10:02:00Z",
+              updated_at: "2026-04-20T10:02:00Z",
+            }),
+            { status: 200 },
+          );
         }
-        if (url.includes("/v1/stores?") && url.includes("area_id=changi")) {
-          return new Response(JSON.stringify(stores), { status: 200 });
+        if (url.includes("/v1/stores/sb-jewel/queue-reports") && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              id: 101,
+              store_id: "sb-jewel",
+              reporter_type: "runner",
+              reporter_id: "runner-alex",
+              queue_length: 4,
+              wait_minutes_est: 9,
+              busy_level: "moderate",
+              confidence_flag: "normal",
+              reported_at: "2026-04-20T10:06:00Z",
+              expires_at: "2026-04-20T10:36:00Z",
+              created_at: "2026-04-20T10:06:00Z",
+            }),
+            { status: 201 },
+          );
         }
-        if (url.includes("/v1/stores/sb-jewel/queue-signal")) {
-          return new Response(JSON.stringify(queueSignalExpired), { status: 200 });
-        }
-        if (url.includes("/v1/stores/sb-jewel")) {
-          return new Response(JSON.stringify(detail), { status: 200 });
-        }
+
         return new Response("not found", { status: 404 });
       }),
     );
   });
 
-  it("shows placeholder without Maps key and renders store name", async () => {
+  it("shows role selection and store list", async () => {
     render(<App />);
-    expect(
-      await screen.findByText(/VITE_GOOGLE_MAPS_API_KEY/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Choose Your Role")).toBeInTheDocument();
     expect(await screen.findByText("Starbucks (Jewel)")).toBeInTheDocument();
   });
 
-  it("shows stale queue signal hint", async () => {
+  it("creates task from requester hub", async () => {
     render(<App />);
-    expect(
-      await screen.findByText(
-        /This signal is stale. Please rely on task execution for real-time results./,
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("creates a task and shows result", async () => {
-    render(<App />);
-    const createBtns = await screen.findAllByRole("button", {
-      name: "Create Task",
-    });
-    const createBtn = createBtns[0];
-    fireEvent.click(createBtn);
+    fireEvent.click(await screen.findByRole("button", { name: "Post Tasks" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Create Task" }));
     expect(await screen.findByText(/Created:/)).toBeInTheDocument();
     expect(await screen.findByText(/Status matching/)).toBeInTheDocument();
   });
 
-  it("accepts task from runner panel and shows accepted", async () => {
+  it("accepts task and submits queue report in runner console", async () => {
     render(<App />);
-    const createBtns = await screen.findAllByRole("button", {
-      name: "Create Task",
+    fireEvent.click(await screen.findByRole("button", { name: "Accept Tasks" }));
+
+    const taskBtn = await screen.findByRole("button", {
+      name: /task-002 · sb-jewel/i,
     });
-    const createBtn = createBtns[0];
-    fireEvent.click(createBtn);
-    const acceptBtns = await screen.findAllByRole("button", {
-      name: "Mark Accepted",
-    });
-    const acceptBtn = acceptBtns[0];
-    fireEvent.click(acceptBtn);
+    fireEvent.click(taskBtn);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Accept Task" }));
     expect(await screen.findByText(/status is accepted/)).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Submit Queue Report" }));
+    expect(await screen.findByText("Queue report submitted.")).toBeInTheDocument();
   });
 });

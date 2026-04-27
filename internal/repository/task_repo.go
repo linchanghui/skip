@@ -172,6 +172,92 @@ func (r *Store) GetTask(ctx context.Context, taskID string, eventLimit int) (*do
 	return &domain.TaskDetail{Task: t, Events: events}, nil
 }
 
+func (r *Store) ListTasks(ctx context.Context, statuses []domain.TaskStatus, runnerID string, limit int) ([]domain.Task, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	query := `
+		SELECT id, user_id, store_id, task_type, status, accepted_runner_id, quoted_price_cents,
+		       requested_at, sla_accept_by, sla_arrive_by, fail_reason, cancelled_by, created_at, updated_at
+		FROM tasks`
+	args := make([]any, 0, len(statuses)+2)
+	conds := make([]string, 0, 2)
+
+	if len(statuses) > 0 {
+		holders := make([]string, 0, len(statuses))
+		for _, st := range statuses {
+			holders = append(holders, "?")
+			args = append(args, string(st))
+		}
+		conds = append(conds, "status IN ("+strings.Join(holders, ",")+")")
+	}
+	if strings.TrimSpace(runnerID) != "" {
+		conds = append(conds, "accepted_runner_id = ?")
+		args = append(args, strings.TrimSpace(runnerID))
+	}
+	if len(conds) > 0 {
+		query += " WHERE " + strings.Join(conds, " AND ")
+	}
+	query += " ORDER BY requested_at DESC, id DESC LIMIT ?"
+	args = append(args, limit)
+
+	rows, err := r.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]domain.Task, 0, limit)
+	for rows.Next() {
+		var (
+			t                            domain.Task
+			taskType, status             string
+			acceptedRunnerID, failReason sql.NullString
+			cancelledBy, requestedAt     sql.NullString
+			slaAcceptBy, slaArriveBy     sql.NullString
+			createdAt, updatedAt         sql.NullString
+			quotedPrice                  sql.NullInt64
+		)
+		if err := rows.Scan(&t.ID, &t.UserID, &t.StoreID, &taskType, &status, &acceptedRunnerID, &quotedPrice,
+			&requestedAt, &slaAcceptBy, &slaArriveBy, &failReason, &cancelledBy, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		tt, _ := domain.ParseTaskType(taskType)
+		ts, _ := domain.ParseTaskStatus(status)
+		t.TaskType = tt
+		t.Status = ts
+		t.AcceptedRunnerID = nullStringPtr(acceptedRunnerID)
+		t.QuotedPriceCents = nullIntPtr(quotedPrice)
+		t.FailReason = nullStringPtr(failReason)
+		t.CancelledBy = nullStringPtr(cancelledBy)
+		if requestedAt.Valid {
+			t.RequestedAt = parseDBTime(requestedAt.String)
+		}
+		if slaAcceptBy.Valid {
+			t.SLAAcceptBy = parseDBTime(slaAcceptBy.String)
+		}
+		if slaArriveBy.Valid {
+			v := parseDBTime(slaArriveBy.String)
+			t.SLAArriveBy = &v
+		}
+		if createdAt.Valid {
+			t.CreatedAt = parseDBTime(createdAt.String)
+		}
+		if updatedAt.Valid {
+			t.UpdatedAt = parseDBTime(updatedAt.String)
+		}
+		out = append(out, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (r *Store) CancelTask(ctx context.Context, taskID, userID string, now time.Time) (*domain.Task, error) {
 	return r.transitionTask(ctx, taskID, []domain.TaskStatus{
 		domain.TaskStatusCreated, domain.TaskStatusMatching,

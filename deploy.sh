@@ -73,6 +73,10 @@ rsync -avz -e "${RSYNC_SSH}" \
   --exclude='.idea/' \
   --exclude='.vscode/' \
   --exclude='data/' \
+  --exclude='web/.env' \
+  --exclude='web/.env.local' \
+  --exclude='web/.env.production' \
+  --exclude='web/.env.production.local' \
   "${LOCAL_PROJECT}/" "${EC2_HOST}:${REMOTE_DIR}/"
 
 if [[ "${STOP_DOTA2}" == "1" ]]; then

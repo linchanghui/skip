@@ -68,6 +68,13 @@ export interface QueueSignalValue {
   expires_at: string;
 }
 
+export interface QueueReport extends QueueSignalValue {
+  id: number;
+  store_id: string;
+  reported_at: string;
+  created_at: string;
+}
+
 export interface QueueSignal {
   store_id: string;
   status_expired: boolean;
@@ -95,4 +102,28 @@ export interface Task {
   accepted_runner_id?: string | null;
   requested_at: string;
   sla_accept_by: string;
+  sla_arrive_by?: string | null;
+}
+
+export interface TaskListResponse {
+  tasks: Task[];
+}
+
+export interface RunnerAvailability {
+  runner_id: string;
+  is_online: boolean;
+  location?: LatLng | null;
+  active_task_id?: string | null;
+  last_ping_at: string;
+  updated_at: string;
+}
+
+export interface CreateQueueReportInput {
+  reporter_type: "runner" | "user" | "operator";
+  reporter_id?: string;
+  queue_length?: number;
+  wait_minutes_est?: number;
+  busy_level: BusyLevel;
+  ttl_minutes?: number;
+  evidence_url?: string;
 }

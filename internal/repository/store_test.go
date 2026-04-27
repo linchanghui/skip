@@ -134,6 +134,48 @@ func TestTaskAndQueueFlows(t *testing.T) {
 	}
 }
 
+func TestQueueReportUpdatesLatestStatusForMap(t *testing.T) {
+	sqlDB := openTestDB(t)
+	repo := &Store{DB: sqlDB}
+	ctx := context.Background()
+
+	ql := 3
+	wm := 100
+	ttl := 30
+	_, err := repo.CreateQueueReport(ctx, "sb-t3", domain.CreateQueueReportInput{
+		ReporterType:   domain.ReporterRunner,
+		ReporterID:     strPtr("runner-alex"),
+		QueueLength:    &ql,
+		WaitMinutesEst: &wm,
+		BusyLevel:      domain.BusyModerate,
+		TTLMinutes:     &ttl,
+	}, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stores, err := repo.ListByArea(ctx, "changi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var t3 *domain.Store
+	for i := range stores {
+		if stores[i].ID == "sb-t3" {
+			t3 = &stores[i]
+			break
+		}
+	}
+	if t3 == nil || t3.LatestStatus == nil {
+		t.Fatalf("expected latest status for sb-t3, got %+v", t3)
+	}
+	if t3.LatestStatus.BusyLevel != domain.BusyModerate {
+		t.Fatalf("want moderate got %s", t3.LatestStatus.BusyLevel)
+	}
+	if t3.LatestStatus.WaitMinutesEst == nil || *t3.LatestStatus.WaitMinutesEst != 100 {
+		t.Fatalf("unexpected wait: %+v", t3.LatestStatus.WaitMinutesEst)
+	}
+}
+
 func TestMetricsSummary(t *testing.T) {
 	sqlDB := openTestDB(t)
 	repo := &Store{DB: sqlDB}
@@ -147,5 +189,37 @@ func TestMetricsSummary(t *testing.T) {
 	}
 	if sum.TotalQueueReports < 1 {
 		t.Fatalf("expected seeded queue reports, got %+v", sum)
+	}
+}
+
+func TestListTasksFilters(t *testing.T) {
+	sqlDB := openTestDB(t)
+	repo := &Store{DB: sqlDB}
+	ctx := context.Background()
+
+	matching, err := repo.ListTasks(ctx, []domain.TaskStatus{domain.TaskStatusMatching}, "", 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matching) == 0 {
+		t.Fatal("expected matching tasks from seed")
+	}
+	for _, task := range matching {
+		if task.Status != domain.TaskStatusMatching {
+			t.Fatalf("unexpected status in filtered result: %s", task.Status)
+		}
+	}
+
+	myActive, err := repo.ListTasks(ctx, []domain.TaskStatus{domain.TaskStatusAccepted}, "runner-bao", 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(myActive) == 0 {
+		t.Fatal("expected runner-bao accepted task from seed")
+	}
+	for _, task := range myActive {
+		if task.AcceptedRunnerID == nil || *task.AcceptedRunnerID != "runner-bao" {
+			t.Fatalf("unexpected runner in filtered result: %+v", task)
+		}
 	}
 }

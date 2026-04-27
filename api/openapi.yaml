@@ -117,6 +117,39 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
 
   /v1/tasks:
+    get:
+      operationId: listTasks
+      summary: List tasks by status and runner assignment
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Comma-separated statuses
+          schema:
+            type: string
+            example: matching
+        - name: runner_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
     post:
       operationId: createTask
       summary: Create a queue-for-me task
@@ -695,6 +728,15 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    TaskListResponse:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
 
     TaskEvent:
       type: object
